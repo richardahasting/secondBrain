@@ -38,6 +38,13 @@ This document provides a visual representation of the 2ndBrain database schema u
     │ + id: TEXT      │◄──┐
     │ + name: TEXT    │   │
     │ + type: ENUM    │   │ 1:N
+    │ + hostname: TEXT│   │
+    │ + ip_address    │   │
+    │ + port: INTEGER │   │
+    │ + public_key    │   │
+    │ + sync_endpoint │   │
+    │ + network_type  │   │
+    │ + is_online     │   │
     │ + last_seen: TS │   │
     │ + created_at: TS│   │
     └─────────────────┘   │

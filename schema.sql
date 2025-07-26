@@ -21,7 +21,17 @@ CREATE TABLE devices (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     type TEXT CHECK(type IN ('mobile', 'desktop', 'pi')) NOT NULL,
+    hostname TEXT,                    -- Machine hostname for network discovery
+    ip_address TEXT,                  -- Current IP address (may change)
+    port INTEGER DEFAULT 8080,       -- Port for sync service
+    public_key TEXT,                  -- Public key for encrypted communication
+    sync_endpoint TEXT,               -- Full sync endpoint URL
+    discovery_info JSON,              -- Additional discovery metadata (Bonjour, etc.)
+    capabilities JSON,                -- What this device can do (features, storage, etc.)
+    network_type TEXT CHECK(network_type IN ('local', 'internet', 'both')) DEFAULT 'local',
     last_seen INTEGER NOT NULL,
+    last_ip_update INTEGER,           -- When IP was last updated
+    is_online BOOLEAN DEFAULT 0,     -- Current online status
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
 
@@ -564,12 +574,16 @@ INSERT INTO locations (name, description) VALUES
 
 -- Insert default settings
 INSERT INTO settings (key, value, category, data_type) VALUES
+('device_id', '', 'system', 'string'),
+('device_name', '', 'system', 'string'),
 ('ai_enabled', 'true', 'ai', 'boolean'),
 ('inventory_mode_enabled', 'true', 'features', 'boolean'),
 ('forget_keyword_enabled', 'true', 'privacy', 'boolean'),
 ('auto_categorization', 'true', 'ai', 'boolean'),
 ('pattern_recognition', 'true', 'ai', 'boolean'),
 ('sync_enabled', 'false', 'sync', 'boolean'),
+('sync_port', '8080', 'sync', 'integer'),
+('sync_discovery_enabled', 'true', 'sync', 'boolean'),
 ('encryption_enabled', 'true', 'security', 'boolean'),
 ('default_search_limit', '50', 'ui', 'integer'),
 ('conversation_archive_days', '365', 'storage', 'integer'),
@@ -650,6 +664,30 @@ LEFT JOIN conversation_keywords ck ON k.id = ck.keyword_id
 LEFT JOIN insight_keywords ink ON k.id = ink.keyword_id
 GROUP BY k.id
 ORDER BY k.frequency DESC;
+
+-- Available devices for sync
+CREATE VIEW available_devices AS
+SELECT 
+    id,
+    name,
+    type,
+    hostname,
+    ip_address,
+    port,
+    sync_endpoint,
+    network_type,
+    is_online,
+    last_seen,
+    CASE 
+        WHEN last_seen > strftime('%s', 'now', '-5 minutes') THEN 'online'
+        WHEN last_seen > strftime('%s', 'now', '-1 hour') THEN 'recent'
+        WHEN last_seen > strftime('%s', 'now', '-1 day') THEN 'today'
+        ELSE 'offline'
+    END as connection_status,
+    (strftime('%s', 'now') - last_seen) as seconds_since_seen
+FROM devices
+WHERE id != (SELECT value FROM settings WHERE key = 'device_id')  -- Exclude self
+ORDER BY is_online DESC, last_seen DESC;
 
 -- =====================================
 -- SCHEMA VERSION

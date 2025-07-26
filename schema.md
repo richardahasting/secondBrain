@@ -14,14 +14,24 @@ The database is designed around several core principles:
 ## Core Tables
 
 ### Devices
-Tracks all devices that can sync with this brain instance.
+Tracks all devices that can sync with this brain instance, including network communication details.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | id | TEXT (PK) | Unique device identifier |
 | name | TEXT | Human-readable device name |
 | type | TEXT | Device type: 'mobile', 'desktop', 'pi' |
+| hostname | TEXT | Machine hostname for network discovery |
+| ip_address | TEXT | Current IP address (may change) |
+| port | INTEGER | Port for sync service (default: 8080) |
+| public_key | TEXT | Public key for encrypted communication |
+| sync_endpoint | TEXT | Full sync endpoint URL |
+| discovery_info | JSON | Additional discovery metadata (Bonjour, etc.) |
+| capabilities | JSON | Device capabilities and features |
+| network_type | TEXT | Network access: 'local', 'internet', 'both' |
 | last_seen | INTEGER | Unix timestamp of last activity |
+| last_ip_update | INTEGER | When IP address was last updated |
+| is_online | BOOLEAN | Current online status |
 | created_at | INTEGER | Unix timestamp of device registration |
 
 ### Conversations
@@ -440,6 +450,15 @@ SELECT keyword, frequency, message_count, item_count,
 FROM keyword_search
 WHERE keyword LIKE '%beans%'
 ORDER BY frequency DESC;
+```
+
+### Available Devices
+Devices available for synchronization with connection status.
+```sql
+SELECT name, type, ip_address, port, connection_status,
+       network_type, seconds_since_seen
+FROM available_devices
+WHERE connection_status IN ('online', 'recent');
 ```
 
 ## Indexes for Performance
