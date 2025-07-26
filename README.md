@@ -108,4 +108,4 @@ This project is in early development. Contributions, ideas, and feedback are wel
 
 ---
 
-*"Remember everything, forget nothing" - except when you explicitly want to forget.*
+*"Remember everything, forget nothing" - except when you really want to.*
